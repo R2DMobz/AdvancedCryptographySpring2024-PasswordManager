@@ -57,26 +57,24 @@ window.columnconfigure(1, minsize=800, weight=1)
 # Side by side text boxes
 plain_box = tk.Text(window)
 cipher_box = tk.Text(window)
-plain_box.pack(side=tk.LEFT)
-cipher_box.pack(side=tk.RIGHT)
+plain_box.pack(side=tk.TOP)
+cipher_box.pack(side=tk.BOTTOM)
 
 mode_var = tk.StringVar(value="encrypt")
 global selected_mode_var
 selected_mode_var = mode_var
 encrypt_button = tk.Radiobutton(window, text="Encrypt", variable=mode_var, value="encrypt", command=selected_mode)
 decrypt_button = tk.Radiobutton(window, text="Decrypt", variable=mode_var, value="decrypt", command=selected_mode)
-encrypt_button.pack()
-decrypt_button.pack()
+encrypt_button.pack(side=tk.LEFT)
+decrypt_button.pack(side=tk.LEFT)
 
 open_button = tk.Button(window, text="Open File", command=open_file)
-
-# Get this damn thing working 
 process_button = tk.Button(window, text="Encrypt", command=lambda: process_file(is_encrypting=True))
-
+# Get this damn thing working
 send_button = tk.Button(window, text="Send File", state=tk.DISABLED)
 
-open_button.pack()
-process_button.pack()
-send_button.pack()
+send_button.pack(side=tk.RIGHT)
+process_button.pack(side=tk.RIGHT)
+open_button.pack(side=tk.RIGHT)
 
 window.mainloop()
