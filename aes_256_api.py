@@ -43,7 +43,8 @@ def encrypt(input_path, KEY):
     with open(out_path, 'xb') as ff:
         ff.write(bytes(crypted_data))
 
-    return msg
+    # return msg
+    return out_path
 
 def decrypt(out_path, KEY):
     OUT_PATH = aes_256.os.path.abspath(out_path)
@@ -75,4 +76,5 @@ def decrypt(out_path, KEY):
 
     msg = 'New decrypted here:', out_path, '--', aes_256.time.time() - time_start, ' seconds\nIf something is wrong, check the key you entered'
     print(msg)
-    return msg
+    #return msg
+    return decrypted_out_path

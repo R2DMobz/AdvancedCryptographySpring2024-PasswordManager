@@ -5,66 +5,47 @@ also serves as a basic text editor for opening, editing, and saving files.
 created by @nicholaswile
 '''
 
-import aes_256_api
+import aes_256_api as aes
 import tkinter as tk
-from tkinter.filedialog import askopenfilename, asksaveasfilename
+from tkinter import filedialog
 
-file = ""
+# TODO: Need to add key generator to GUI
+global key
+key = '192837465192837465'
 
-"""Encrypt the current file."""
-def encrypt_file():
-    # TODO: Currently the user must select an existing file. Would like to make it work with text in the editor window
-    print(file)
-    if file == "":
-        txt_edit.delete("1.0", tk.END)
-        txt_edit.insert(tk.END, "Must select a source file to encrypt")
-    else:
-        # TODO: Need to add key generator to GUI
-        key = '192837465192837465'  
-        msg = aes_256_api.encrypt(file, key)
-        txt_edit.delete("1.0", tk.END)
-        txt_edit.insert(tk.END, msg)
-
-"""Decrypt the current file."""
-def decrypt_file():
-    if file == "":
-        txt_edit.delete("1.0", tk.END)
-        txt_edit.insert(tk.END, "Must select a source file to decrypt")
-    else:
-        # TODO: Need to add key generator to GUI
-        key = '192837465192837465'  
-        msg = aes_256_api.decrypt(file, key)
-        txt_edit.delete("1.0", tk.END)
-        txt_edit.insert(tk.END, msg)
-
-"""Open a file for encrypting or decrypting."""
 def open_file():
-    filepath = askopenfilename(
-        filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
-    )
-    if not filepath:
-        return
-    txt_edit.delete("1.0", tk.END)
-    with open(filepath, mode="rb") as input_file:  
-        text = input_file.read()
-        txt_edit.insert(tk.END, text)
-    window.title(f"File Encryptor - {filepath}")
-    # TODO: Use a better practice. LOL
-    global file
-    file = filepath
+    global file_path
+    file_path = filedialog.askopenfilename()
+    with open(file_path, mode="rb") as file:
+        plain_box.delete("1.0", tk.END)
+        plain_box.insert(tk.END, file.read())
 
-"""Save the current file as a new file."""
-def save_file():
-    filepath = asksaveasfilename(
-        defaultextension=".txt",
-        filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")],
-    )
-    if not filepath:
+def process_file(is_encrypting):
+    processed_path = ""
+    if not file_path:
+        # text = "Please select a file to process"
+        # cipher_box.delete("1.0", tk.END)
+        # cipher_box.insert(tk.END, text)
         return
-    with open(filepath, mode="w", encoding="utf-8") as output_file:
-        text = txt_edit.get("1.0", tk.END)
-        output_file.write(text)
-    window.title(f"File Encryptor - {filepath}")
+    elif is_encrypting:
+        text = f"Encrypting {file_path}, this may take up to a minute, please wait..."
+        cipher_box.insert(tk.END, text)
+        processed_path = aes.encrypt(file_path, key)
+    else:
+        text = f"Decrypting {file_path}, this may take up to a minute, please wait..."
+        cipher_box.insert(tk.END, text)
+        processed_path = aes.decrypt(file_path, key) 
+    if len(processed_path) > 0:  
+        cipher_box.delete("1.0", tk.END)
+        with open(processed_path, mode = "rb") as file:
+            text = file.read()
+            cipher_box.insert(tk.END, text)
+
+def selected_mode():
+    global selected_mode_var
+    selected_mode_var = mode_var.get()
+    process_button.config(text=selected_mode_var.capitalize())
+    send_button.config(state=(tk.ACTIVE if selected_mode_var == "encrypt" and not plain_box.get("1.0", tk.END) else tk.DISABLED))
 
 window = tk.Tk()
 window.title("File Encryptor")
@@ -72,22 +53,27 @@ window.title("File Encryptor")
 window.rowconfigure(0, minsize=800, weight=1)
 window.columnconfigure(1, minsize=800, weight=1)
 
-txt_edit = tk.Text(window)
-frm_buttons = tk.Frame(window, relief=tk.RAISED, bd=2)
+# Side by side text boxes
+plain_box = tk.Text(window)
+cipher_box = tk.Text(window)
+plain_box.pack(side=tk.LEFT)
+cipher_box.pack(side=tk.RIGHT)
 
-btn_open = tk.Button(frm_buttons, text="Open", command=open_file)
-btn_open.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
+mode_var = tk.StringVar(value="encrypt")
+encrypt_button = tk.Radiobutton(window, text="Encrypt", variable=mode_var, value="encrypt", command=selected_mode)
+decrypt_button = tk.Radiobutton(window, text="Decrypt", variable=mode_var, value="decrypt", command=selected_mode)
+encrypt_button.pack()
+decrypt_button.pack()
 
-btn_save = tk.Button(frm_buttons, text="Save As...", command=save_file)
-btn_save.grid(row=1, column=0, sticky="ew", padx=5)
+open_button = tk.Button(window, text="Open File", command=open_file)
 
-btn_open = tk.Button(frm_buttons, text="Encrypt", command=encrypt_file)
-btn_open.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
+# Get this damn thing working 
+process_button = tk.Button(window, text="Encrypt", command=lambda: process_file(is_encrypting=True))
 
-btn_open = tk.Button(frm_buttons, text="Decrypt", command=decrypt_file)
-btn_open.grid(row=3, column=0, sticky="ew", padx=5, pady=5)
+send_button = tk.Button(window, text="Send File", state=tk.DISABLED)
 
-frm_buttons.grid(row=0, column=0, sticky="ns")
-txt_edit.grid(row=0, column=1, sticky="nsew")
+open_button.pack()
+process_button.pack()
+send_button.pack()
 
 window.mainloop()
