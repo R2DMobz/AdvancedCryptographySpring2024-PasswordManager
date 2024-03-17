@@ -74,7 +74,7 @@ def decrypt(out_path, KEY):
     with open(decrypted_out_path, 'xb') as ff:
         ff.write(unpadded_data)
 
-    msg = 'New decrypted here:', out_path, '--', aes_256.time.time() - time_start, ' seconds\nIf something is wrong, check the key you entered'
+    msg = 'New decrypted here:', out_path, '--', aes_256.time.time() - time_start, ' seconds. If something is wrong, check the key you entered'
     print(msg)
     #return msg
     return decrypted_out_path

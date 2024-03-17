@@ -29,10 +29,12 @@ def process_file(is_encrypting):
         return
     elif is_encrypting:
         text = f"Encrypting {file_path}, this may take up to a minute, please wait..."
+        cipher_box.delete("1.0", tk.END)
         cipher_box.insert(tk.END, text)
         processed_path = aes.encrypt(file_path, key)
     else:
         text = f"Decrypting {file_path}, this may take up to a minute, please wait..."
+        cipher_box.delete("1.0", tk.END)
         cipher_box.insert(tk.END, text)
         processed_path = aes.decrypt(file_path, key) 
     if len(processed_path) > 0:  
@@ -42,10 +44,9 @@ def process_file(is_encrypting):
             cipher_box.insert(tk.END, text)
 
 def selected_mode():
-    global selected_mode_var
     selected_mode_var = mode_var.get()
-    process_button.config(text=selected_mode_var.capitalize())
-    send_button.config(state=(tk.ACTIVE if selected_mode_var == "encrypt" and not plain_box.get("1.0", tk.END) else tk.DISABLED))
+    process_button.config(text=selected_mode_var.capitalize(), command=lambda: process_file(is_encrypting=(selected_mode_var == "encrypt")))
+    # send_button.config(state=(tk.ACTIVE if selected_mode_var == "encrypt" and plain_box.get("1.0", tk.END) else tk.DISABLED))
 
 window = tk.Tk()
 window.title("File Encryptor")
@@ -60,6 +61,8 @@ plain_box.pack(side=tk.LEFT)
 cipher_box.pack(side=tk.RIGHT)
 
 mode_var = tk.StringVar(value="encrypt")
+global selected_mode_var
+selected_mode_var = mode_var
 encrypt_button = tk.Radiobutton(window, text="Encrypt", variable=mode_var, value="encrypt", command=selected_mode)
 decrypt_button = tk.Radiobutton(window, text="Decrypt", variable=mode_var, value="decrypt", command=selected_mode)
 encrypt_button.pack()
