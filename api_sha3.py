@@ -1,7 +1,7 @@
 '''
 an api to streamline calling sha3 key generation functions from the front-end
 ---
-created by @nicholaswile (April 16th, 2024 1:06 AM) 
+created by @nicholaswile (April 16th, 2024 1:56 AM) 
 '''
 
 sha3 = __import__("SHA-3")
