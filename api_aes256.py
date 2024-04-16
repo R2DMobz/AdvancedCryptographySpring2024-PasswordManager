@@ -1,8 +1,8 @@
 '''
-an "api" that decouples the encrypt/decrypt steps from the main function in aes_256.py 
+an api that decouples the encrypt/decrypt steps from the main function in aes_256.py 
 so they can easily be called from the gui.py user interface file.
 ---
-created by @nicholaswile
+created by @nicholaswile (March 14th, 2024 3:52 AM) 
 '''
 
 import aes_256

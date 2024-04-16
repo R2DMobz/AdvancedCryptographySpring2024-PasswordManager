@@ -2,79 +2,179 @@
 a gui program using tkinter for encrypting and decrypting files selected by the user.
 also serves as a basic text editor for opening, editing, and saving files.
 ---
-created by @nicholaswile
+created by @nicholaswile (March 14th, 2024 3:52 AM) 
 '''
 
-import aes_256_api as aes
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog
+import api_aes256 as aes
+import api_sha3 as sha3
 
-# TODO: Need to add key generator to GUI
-global key
-key = '192837465192837465'
+class FileEncryptorApp:
+    # Initialize variables
+    open_file_path = ""
+    save_file_path = ""
+    password = ""
+    key = ""
 
-def open_file():
-    global file_path
-    file_path = filedialog.askopenfilename()
-    with open(file_path, mode="rb") as file:
-        plain_box.delete("1.0", tk.END)
-        plain_box.insert(tk.END, file.read())
+    # Constructor
+    def __init__(self, root):
+        self.root = root
+        self.root.title("File Encryptor")
+        self.root.geometry("800x800")
 
-def process_file(is_encrypting):
-    processed_path = ""
-    if not file_path:
-        # text = "Please select a file to process"
-        # cipher_box.delete("1.0", tk.END)
-        # cipher_box.insert(tk.END, text)
-        return
-    elif is_encrypting:
-        text = f"Encrypting {file_path}, this may take up to a minute, please wait..."
-        cipher_box.delete("1.0", tk.END)
-        cipher_box.insert(tk.END, text)
-        processed_path = aes.encrypt(file_path, key)
-    else:
-        text = f"Decrypting {file_path}, this may take up to a minute, please wait..."
-        cipher_box.delete("1.0", tk.END)
-        cipher_box.insert(tk.END, text)
-        processed_path = aes.decrypt(file_path, key) 
-    if len(processed_path) > 0:  
-        cipher_box.delete("1.0", tk.END)
-        with open(processed_path, mode = "rb") as file:
-            text = file.read()
-            cipher_box.insert(tk.END, text)
+        # Create two tabs: encrypt / decrypt
+        self.tab_control = ttk.Notebook(root)
+        self.encrypt_tab = ttk.Frame(self.tab_control)
+        self.decrypt_tab = ttk.Frame(self.tab_control)
+        self.tab_control.add(self.encrypt_tab, text="Encrypt")
+        self.tab_control.add(self.decrypt_tab, text="Decrypt")
+        self.tab_control.pack(expand=1, fill="both")
 
-def selected_mode():
-    selected_mode_var = mode_var.get()
-    process_button.config(text=selected_mode_var.capitalize(), command=lambda: process_file(is_encrypting=(selected_mode_var == "encrypt")))
-    # send_button.config(state=(tk.ACTIVE if selected_mode_var == "encrypt" and plain_box.get("1.0", tk.END) else tk.DISABLED))
+        # Initialize variables
+        self.loaded_file = None
+        self.processed_content = ""
 
-window = tk.Tk()
-window.title("File Encryptor")
+        '''
+        WIDGETS
+        '''
+        # Encrypt Tab
+        self.password_label = ttk.Label(self.encrypt_tab, text="Enter Password:")
+        self.password_label.pack()
+        self.password_entry = ttk.Entry(self.encrypt_tab, show="")
+        self.password_entry.pack()
+        self.generate_key_button = ttk.Button(self.encrypt_tab, text="Generate Key", command=self.generate_key)
+        self.generate_key_button.pack()
+        self.key_label_encrypt = ttk.Label(self.encrypt_tab, text="Generated Key:")
+        self.key_label_encrypt.pack()
+        self.key_display = tk.Label(self.encrypt_tab, text="")
+        self.key_display.pack()
+        self.copy_key_button = ttk.Button(self.encrypt_tab, text="Copy Key", command=self.copy_key)
+        self.copy_key_button.pack()
 
-window.rowconfigure(0, minsize=800, weight=1)
-window.columnconfigure(1, minsize=800, weight=1)
+        # Decrypt Tab
+        # Don't need to generate a key
+        self.key_label_decrypt = ttk.Label(self.decrypt_tab, text="Enter Decryption Key:")
+        self.key_label_decrypt.pack()
+        self.key_entry_decrypt = ttk.Entry(self.decrypt_tab, show="")
+        self.key_entry_decrypt.pack()
 
-# Side by side text boxes
-plain_box = tk.Text(window)
-cipher_box = tk.Text(window)
-plain_box.pack(side=tk.TOP)
-cipher_box.pack(side=tk.BOTTOM)
+        '''
+        FIRST TEXTBOXES - LOADED CONTENTS
+        '''
+        # ENCRYPT
+        self.openbox_plain = tk.Text(self.encrypt_tab, height=15, width=90)
+        self.openbox_plain.pack()
 
-mode_var = tk.StringVar(value="encrypt")
-global selected_mode_var
-selected_mode_var = mode_var
-encrypt_button = tk.Radiobutton(window, text="Encrypt", variable=mode_var, value="encrypt", command=selected_mode)
-decrypt_button = tk.Radiobutton(window, text="Decrypt", variable=mode_var, value="decrypt", command=selected_mode)
-encrypt_button.pack(side=tk.LEFT)
-decrypt_button.pack(side=tk.LEFT)
+        # DECRYPT
+        self.openbox_cipher = tk.Text(self.decrypt_tab, height=15, width=90)
+        self.openbox_cipher.pack()
 
-open_button = tk.Button(window, text="Open File", command=open_file)
-process_button = tk.Button(window, text="Encrypt", command=lambda: process_file(is_encrypting=True))
-# Get this damn thing working
-send_button = tk.Button(window, text="Send File", state=tk.DISABLED)
+        '''
+        FILE PROCESSING BUTTONS
+        '''
+        # ENCRYPT
 
-send_button.pack(side=tk.RIGHT)
-process_button.pack(side=tk.RIGHT)
-open_button.pack(side=tk.RIGHT)
+        # Frame
+        self.button_frame_encrypt = ttk.Frame(self.encrypt_tab)
+        self.button_frame_encrypt.pack()
 
-window.mainloop()
+        # Buttons
+        self.open_button = ttk.Button(self.button_frame_encrypt, text="Open File", command=self.open_file)
+        self.open_button.pack(side=tk.LEFT)
+        self.process_button = ttk.Button(self.button_frame_encrypt, text="Encrypt", command=self.process_file)
+        self.process_button.pack(side=tk.LEFT)
+
+        # DECRYPT
+
+        # Frame
+        self.button_frame_decrypt = ttk.Frame(self.decrypt_tab)
+        self.button_frame_decrypt.pack()
+
+        # Buttons
+        self.open_button = ttk.Button(self.button_frame_decrypt, text="Open File", command=self.open_file)
+        self.open_button.pack(side=tk.LEFT)
+        self.process_button = ttk.Button(self.button_frame_decrypt, text="Decrypt", command=self.process_file)
+        self.process_button.pack(side=tk.LEFT)
+
+        '''
+        SECOND TEXTBOX - PROCESSED CONTENTS
+        '''
+        # ENCRYPT
+        self.savebox_cipher = tk.Text(self.encrypt_tab, height=15, width=90)
+        self.savebox_cipher.pack()
+
+        # DECRYPT
+        self.savebox_plain = tk.Text(self.decrypt_tab, height=15, width=90)
+        self.savebox_plain.pack()
+
+    def generate_key(self):
+        self.password = self.password_entry.get()
+        if len(self.password) < 1:
+            return
+        self.key = sha3.generate_key(self.password)
+        self.key_display.config(text=self.key)
+    
+    def copy_key(self):
+        root.clipboard_clear()
+        root.clipboard_append(self.key)
+
+    def encrypting(self):
+        current_tab = self.tab_control.tab(self.tab_control.select(), "text")
+        return current_tab == "Encrypt"
+
+    def open_file(self):
+        # Open a file and display its content
+        self.loaded_file = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+        self.open_file_path = self.loaded_file
+
+        if self.loaded_file:
+           
+            # RB to enable display of encrypted ciphertext 
+            with open(self.loaded_file, "rb") as file:
+                content = file.read()
+
+                if self.encrypting():
+                    self.openbox_plain.delete(1.0, tk.END)
+                    self.openbox_plain.insert(tk.END, content)
+
+                else:
+                    self.openbox_cipher.delete(1.0, tk.END)
+                    self.openbox_cipher.insert(tk.END, content)
+
+    def process_file(self):
+        # If no key has been inputted, do nothing
+        if len(self.key) < 1:
+            return
+        # If no file has been opened, do nothing
+        if self.open_file_path == "":
+            return
+        elif self.encrypting():
+            self.save_file_path = aes.encrypt(self.open_file_path, self.key)
+            text = "File processing. Please wait, this may take up to a minute..."
+            self.savebox_cipher.delete(1.0, tk.END)
+            self.savebox_cipher.insert(tk.END, text)
+        else:
+            self.save_file_path = aes.decrypt(self.open_file_path, self.key)
+            text = "File processing. Please wait, this may take up to a minute..."
+            self.savebox_plain.delete(1.0, tk.END)
+            self.savebox_plain.insert(tk.END, text)
+        
+        if self.save_file_path == "":
+            return
+        elif self.encrypting():
+            self.savebox_cipher.delete("1.0", tk.END)
+            with open(self.save_file_path, mode = "rb") as file:
+                text = file.read()
+                self.savebox_cipher.insert(tk.END, text)
+        else:
+            self.savebox_plain.delete("1.0", tk.END)
+            with open(self.save_file_path, mode = "rb") as file:
+                text = file.read()
+                self.savebox_plain.insert(tk.END, text)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = FileEncryptorApp(root)
+    root.mainloop()

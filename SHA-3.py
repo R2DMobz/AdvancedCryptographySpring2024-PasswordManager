@@ -105,9 +105,9 @@ def sha3(message, hash_size):
 
     return hash_bytes[:hash_size // 8]
 
-# Example:
-data = b"Hello, world!"
-hashed_data = sha3(data, 256)
-hashed_data_bytes = bytes(bytearray(x % 256 for x in hashed_data))
-print("SHA-3 hash:", hashed_data_bytes.hex())
-
+if __name__ == "__main__":
+    # Example:
+    data = b"Hello, world!"
+    hashed_data = sha3(data, 256)
+    hashed_data_bytes = bytes(bytearray(x % 256 for x in hashed_data))
+    print("SHA-3 hash:", hashed_data_bytes.hex())
