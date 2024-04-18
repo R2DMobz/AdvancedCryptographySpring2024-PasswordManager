@@ -254,7 +254,7 @@ def main(input_path, key):
     temp = []
     for byte in padded_data:
         temp.append(byte)
-        if len(temp) ==     16:
+        if len(temp) ==     32:
             crypted_data.extend(encrypt(temp, key))
 
             del temp[:]
@@ -273,7 +273,7 @@ def main(input_path, key):
     temp = []
     for byte in crypted_data:
         temp.append(byte)
-        if len(temp) == 16:
+        if len(temp) == 32:
             decrypted_data.extend(decrypt(temp, key))
 
             del temp[:]
